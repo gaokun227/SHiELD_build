@@ -27,26 +27,67 @@
 hostname=`hostname`
 
 case $hostname in
+   gaea6? | c6n* )
+      echo " gaea C6 environment "
+
+      . ${MODULESHOME}/init/sh
+      module unload PrgEnv-pgi PrgEnv-intel PrgEnv-gnu
+      module unload darshan-runtime
+      module load   PrgEnv-intel
+      module rm intel-classic
+      module rm intel-oneapi
+      module rm intel
+      module rm gcc
+      module load intel-classic/2023.2.0
+      module unload cray-libsci
+      module load cray-hdf5/1.12.2.11
+      module load cray-netcdf/4.9.0.9
+      module load craype-hugepages4M
+      #module load cmake/3.27.9
+      #module load libyaml/0.2.5
+
+      # Add -DHAVE_GETTID to the FMS cppDefs
+      export FMS_CPPDEFS=-DHAVE_GETTID
+
+      # make your compiler selections here
+      export FC=ftn
+      export CC=cc
+      export CXX=CC
+      export LD=ftn
+      export TEMPLATE=site/intel.mk
+      export LAUNCHER=srun
+
+      #need to add this for dynamically linking on GAEA
+      export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
+      # highest level of AVX support
+      export AVX_LEVEL=-march=core-avx-i
+      echo -e ' '
+      module list
+      ;;
    gaea5? | c5n* )
       echo " gaea C5 environment "
 
       . ${MODULESHOME}/init/sh
       module unload PrgEnv-pgi PrgEnv-intel PrgEnv-gnu
+      module unload darshan-runtime
       module load   PrgEnv-intel
       module rm intel-classic
       module rm intel-oneapi
       module rm intel
       module rm gcc
-      module load intel-classic/2022.2.1
+      module load intel-classic/2023.2.0
       module unload cray-libsci
-      module load cray-hdf5
-      module load cray-netcdf
+      module load cray-hdf5/1.12.2.11
+      module load cray-netcdf/4.9.0.9
       module load craype-hugepages4M
-      module load cmake/3.23.1
+      module load cmake/3.27.9
       module load libyaml/0.2.5
 
       # Add -DHAVE_GETTID to the FMS cppDefs
       export FMS_CPPDEFS=-DHAVE_GETTID
+      # Needed with the new Environment on C5 as of 10/16/2024
+      export FI_VERBS_PREFER_XRC=0
 
       # make your compiler selections here
       export FC=ftn
@@ -55,55 +96,25 @@ case $hostname in
       export LD=ftn
       export TEMPLATE=site/intel.mk
       export LAUNCHER=srun
- 
+
+      #need to add this for dynamically linking on GAEA
+      export LD_LIBRARY_PATH=${CRAY_LD_LIBRARY_PATH}:${LD_LIBRARY_PATH}
+
       # highest level of AVX support
-      export AVX_LEVEL=-march=core-avx2
-      echo -e ' '
-      module list
-      ;;
-   gaea1? | nid* )
-      echo " gaea C3/C4 environment "
-
-      . ${MODULESHOME}/init/sh
-      module unload PrgEnv-pgi PrgEnv-intel PrgEnv-gnu
-      module load   PrgEnv-intel
-      module rm intel-classic
-      module rm intel-oneapi
-      module rm intel
-      module rm gcc
-      module load intel-classic/2022.0.2
-      module load cray-hdf5/1.12.1.3
-      module load cray-netcdf/4.8.1.3
-      module load craype-hugepages4M
-      module load cmake/3.20.1
-      module load libyaml/0.2.5
-
-      # Add -DHAVE_GETTID to the FMS cppDefs
-      export FMS_CPPDEFS=-DHAVE_GETTID
-
-      # make your compiler selections here
-      export FC=ftn
-      export CC=cc
-      export CXX=CC
-      export LD=ftn
-      export TEMPLATE=site/intel.mk
-      export LAUNCHER=srun
-   
-      # highest level of AVX support
-      export AVX_LEVEL=-xCORE-AVX2
+      export AVX_LEVEL=-march=core-avx-i
       echo -e ' '
       module list
       ;;
    Orion* )
       echo " Orion environment "
- 
+
       . ${MODULESHOME}/init/sh
       module load intel/2020
       module load impi/2020
       module load netcdf
       module load hdf5
       module load cmake/3.22.1
- 
+
       export CPATH="${NETCDF}/include:${CPATH}"
       export HDF5=${HDF5_ROOT}
       export LIBRARY_PATH="${LIBRARY_PATH}:${NETCDF}/lib:${HDF5}/lib"
@@ -117,7 +128,7 @@ case $hostname in
       export LD=mpiifort
       export TEMPLATE=site/intel.mk
       export LAUNCHER=srun
- 
+
       # highest level of AVX support
       export AVX_LEVEL=-xSKYLAKE-AVX512
       echo -e ' '
@@ -180,12 +191,13 @@ case $hostname in
       echo " lsc environment "
 
       source $MODULESHOME/init/sh
-      module load oneapi/2023.0
-      module load compiler/2023.0.0
-      module load mpi/2021.8.0
-      module load netcdf/4.9.0
-      module load hdf5/1.12.0
-      module load cmake/3.18.2
+      module load oneapi/2024.2
+      module load compiler/2024.2.0
+      module load mpi/2021.13
+      module load netcdf/4.9.2
+      module load hdf5/1.14.5
+      module load cmake/3.30.0
+      module load libyaml/0.2.5
 
       export CPATH="${NETCDF_ROOT}/include:${CPATH}"
       export NETCDF_DIR=${NETCDF_ROOT}
@@ -193,7 +205,7 @@ case $hostname in
 
       # make your compiler selections here
       export FC=mpiifort
-      export CC=mpiicc
+      export CC=mpiicx
       export CXX=mpicpc
       export LD=mpiifort
       export TEMPLATE=site/intel.mk
@@ -207,6 +219,33 @@ case $hostname in
       fi
       echo -e ' '
       module list
+      ;;
+   stellar* )
+     echo " Stellar environment "                                                                                                                            
+
+      . ${MODULESHOME}/init/sh
+      module purge
+      module load cmake/3.19.7
+      module load intel/2021.1.2
+      module load openmpi/intel-2021.1/4.1.2
+      module load netcdf/intel-2021.1/hdf5-1.10.6/4.7.4
+      module load hdf5/intel-2021.1/1.10.6
+
+      export FMS_CPPDEFS=""
+
+      # make your compiler selections here
+      export FC=mpif90
+      export CC=mpicc
+      export CXX=mpicxx
+      export LD=mpif90
+      export TEMPLATE=site/intel.mk
+      export LAUNCHER=srun
+
+      # highest level of AVX support
+      export AVX_LEVEL=-march=core-avx2
+      echo -e ' '
+      module list  
+ 
       ;;
    * )
       echo " no environment available based on the hostname "
