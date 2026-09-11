@@ -15,6 +15,7 @@ DEBUG =
 REPRO =
 VERBOSE =
 OPENMP =
+PIC =
 
 ##############################################
 # Need to use at least GNU Make version 3.81 #
@@ -59,6 +60,15 @@ FFLAGS += -xCORE-AVX-I -qno-opt-dynamic-align
 CFLAGS += -xCORE-AVX-I -qno-opt-dynamic-align
 endif
 
+# For some applications, namely wrapping SHiELD in Python, it can be required to
+# compile all libraries as position independent code. Setting the PIC option to
+# 'Y' with this Makefile template will enable this.
+ifeq ($(PIC),Y)
+FFLAGS += -fPIC
+CFLAGS += -fPIC
+CPPFLAGS += -fPIC
+endif
+
 FFLAGS_OPT = -O2 -debug minimal -fp-model source -qoverride-limits -qopt-prefetch=3
 FFLAGS_REPRO = -O2 -debug minimal -fp-model source -qoverride-limits #-fpe0 #causes problems??
 FFLAGS_DEBUG = -g -O0 -debug -check -check noarg_temp_created -check nopointer -warn -warn noerrors -fp-stack-check -fstack-protector-all -fpe0 -ftrapuv
@@ -67,7 +77,7 @@ TRANSCENDENTALS := -fast-transcendentals
 FFLAGS_OPENMP = -qopenmp
 FFLAGS_VERBOSE = -v -V -what
 
-CFLAGS := -D__IFC -sox -msse2 -fp-model source
+CFLAGS := -D__IFC -sox -msse2
 ifeq ($(AVX2),Y)
 #CFLAGS += -xHOST -xCORE-AVX2 -qno-opt-dynamic-align
 endif
