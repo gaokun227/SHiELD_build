@@ -1,0 +1,111 @@
+#!/bin/sh
+#***********************************************************************
+#*                   GNU Lesser General Public License
+#*
+#* This file is part of the SHiELD Build System.
+#*
+#* The SHiELD Build System free software: you can redistribute it
+#* and/or modify it under the terms of the
+#* GNU Lesser General Public License as published by the
+#* Free Software Foundation, either version 3 of the License, or
+#* (at your option) any later version.
+#*
+#* The SHiELD Build System distributed in the hope that it will be
+#* useful, but WITHOUT ANYWARRANTY; without even the implied warranty
+#* of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#* See the GNU General Public License for more details.
+#*
+#* You should have received a copy of the GNU Lesser General Public
+#* License along with theSHiELD Build System
+#* If not, see <http://www.gnu.org/licenses/>.
+#***********************************************************************
+#
+#  DISCLAIMER: This script is provided as-is and as such is unsupported.
+#
+
+. ${MODULESHOME}/init/sh
+module load git
+
+export SHiELD_SRC=${PWD%/*}/SHiELD_SRC/
+
+mkdir -p ${SHiELD_SRC}
+cd ${SHiELD_SRC}
+
+config="shield"
+config_name="SHiELD"
+
+#Check input argument
+######################
+for arg in "$@"
+  do
+      case $arg in
+          solo|shield|shiemom)
+             config="${arg#*=}"
+             if [ $config = 'solo' ] ; then
+               config_name="SOLO"
+             fi
+             if [ $config = 'shield' ] ; then
+               config_name="SHiELD"
+             fi
+             if [ $config = 'shiemom' ] ; then
+               config_name="SHiEMOM"
+             fi
+             shift # Remove "config" from processing
+             ;;
+          *)
+          if [ ${arg#} != '--help' ] && [ ${arg#} != '-h' ] ; then
+            echo "option "${arg#}" not found"
+          fi
+          echo -e ' '
+          echo -e "valid options are:"
+          echo -e "\t[solo]       \t\t\t SOLO FV3 configuration"
+          echo -e "\t[shield]     \t\t\t SHiELD configuration"
+          echo -e "\t[shiemom]    \t\t\t SHiEMOM (SHiELD+MOM6/SIS2) configuration"
+          echo -e "\n"
+          exit
+          ;;
+      esac
+  done
+
+
+#CHECKOUT code
+################
+echo ' '
+echo 'Checking out files for: '$config_name
+echo ' '
+
+release="main"
+
+fv3_release=$release
+phy_release=$release
+fms_release=$release #"2025.01"
+fms_c_release=$release #"2025.01.01"
+drivers_release=$release
+
+git clone -b ${fv3_release} https://github.com/NOAA-GFDL/GFDL_atmos_cubed_sphere
+git clone -b ${fms_release}   https://github.com/NOAA-GFDL/FMS
+git clone -b ${drivers_release}   https://github.com/NOAA-GFDL/atmos_drivers
+
+if [ $config_name = 'SHiELD' ] || [ $config_name = 'SHiEMOM' ] ; then
+   git clone -b ${phy_release} https://github.com/NOAA-GFDL/SHiELD_physics
+   git clone -b ${fms_c_release} https://github.com/NOAA-GFDL/FMSCoupler
+fi
+
+if [ $config_name = 'SHiELD' ] ; then
+   git clone  https://github.com/NOAA-GFDL/ocean_null
+   git clone  https://github.com/NOAA-GFDL/land_null
+   git clone  https://github.com/NOAA-GFDL/ice_null
+   git clone  https://github.com/NOAA-GFDL/ice_param
+fi
+
+if [ $config_name = 'SHiEMOM' ] ; then
+   git clone  https://github.com/NOAA-GFDL/land_null
+   git clone  https://github.com/NOAA-GFDL/ice_param
+   cd ../SHiELD_build/
+   ./CHECKOUT_mom6.csh
+fi
+
+#Automatic release tracking from Matt M.
+echo $release > release
+
+
