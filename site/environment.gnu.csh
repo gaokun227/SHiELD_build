@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/csh
 #***********************************************************************
 #*                   GNU Lesser General Public License
 #*
@@ -23,20 +23,35 @@
 #  DISCLAIMER: This script is provided as-is and as such is unsupported.
 #
 
-. ${MODULESHOME}/init/sh
-module load git
+set hostname=`hostname`
 
-export SHiELD_SRC=${PWD%/*}/SHiELD_SRC/
+switch ($hostname)
+   case gaea5?:
+   case c5n*:
+      echo " gaea C5 environment "
+      source ${MODULESHOME}/init/csh
+       module unload PrgEnv-pgi PrgEnv-intel PrgEnv-gnu
+       module rm intel-classic
+       module rm intel-oneapi
+       module rm intel
+       module load   PrgEnv-gnu
+       module rm gcc
+       module load gcc-native/13.2
+       module load cray-hdf5/1.14.3.5
+       module load cray-netcdf/4.9.0.17
+       module load craype-hugepages4M
+       module load cmake/3.27.9
+       module load libyaml/0.2.5
 
-mkdir -p ${SHiELD_SRC}
-cd ${SHiELD_SRC}
+       # Needed with the new Environment on C5 as of 10/16/2024
+       setenv FI_VERBS_PREFER_XRC 0
 
-release="shield2022"
+       setenv LAUNCHER "srun"
 
-fv3_release=$release
-phy_release=$release
-fms_release="fms_2021.03"
-
-git clone -b ${fv3_release}   https://github.com/gaokun227/GFDL_atmos_cubed_sphere
-git clone -b ${phy_release}   https://github.com/gaokun227/SHiELD_physics
-git clone -b ${fms_release}   https://github.com/gaokun227/FMS
+       echo -e ' '
+       module list
+       breaksw
+   default:
+       echo " no environment available based on the hostname "
+       breaksw
+endsw
